@@ -1,28 +1,110 @@
 <!DOCTYPE html>
-<html>
+<html lang="uz">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sertifikat</title>
     <style>
-        body, html {
+        * {
             margin: 0;
             padding: 0;
+            box-sizing: border-box;
+        }
+        body, html {
             width: 100%;
             height: 100%;
             overflow: hidden;
+            background: #282828;
         }
-        iframe {
+        #pdf-canvas {
+            display: block;
+            margin: 0 auto;
+        }
+        #pdf-container {
             width: 100%;
             height: 100%;
-            border: none;
+            overflow: auto;
+            text-align: center;
+            padding: 20px 0;
+        }
+        .loading {
+            color: white;
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding-top: 50px;
+            font-size: 18px;
         }
     </style>
 </head>
 <body>
+    <div id="pdf-container">
+        <div class="loading" id="loading">Yuklanmoqda...</div>
+        <canvas id="pdf-canvas"></canvas>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script>
-        const pdfUrl = window.location.origin + window.location.pathname.replace('index.html', '') + '223344.pdf';
-        document.write('<iframe src="https://docs.google.com/viewer?url=' + encodeURIComponent(pdfUrl) + '&embedded=true"></iframe>');
+        const pdfjsLib = window['pdfjs-dist/build/pdf'];
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+        const url = '223344.pdf';
+        const canvas = document.getElementById('pdf-canvas');
+        const ctx = canvas.getContext('2d');
+        const loading = document.getElementById('loading');
+
+        pdfjsLib.getDocument(url).promise.then(pdf => {
+            loading.style.display = 'none';
+
+            // Barcha sahifalarni render qilish
+            const renderPages = async () => {
+                const dpr = window.devicePixelRatio || 1;
+
+                for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+                    const page = await pdf.getPage(pageNum);
+
+                    // Scale ni aniqlash
+                    const viewport = page.getViewport({ scale: 1 });
+                    const scale = Math.min(
+                        (window.innerWidth - 40) / viewport.width,
+                        window.innerHeight / viewport.height,
+                        3
+                    );
+
+                    const scaledViewport = page.getViewport({ scale: scale * dpr });
+
+                    // Canvas o'lchamini sozlash
+                    if (pageNum === 1) {
+                        canvas.width = scaledViewport.width;
+                        canvas.height = scaledViewport.height * pdf.numPages;
+                        canvas.style.width = (scaledViewport.width / dpr) + 'px';
+                        canvas.style.height = (scaledViewport.height * pdf.numPages / dpr) + 'px';
+                    }
+
+                    // Render konteksti
+                    const renderContext = {
+                        canvasContext: ctx,
+                        viewport: scaledViewport,
+                        transform: [1, 0, 0, 1, 0, (pageNum - 1) * scaledViewport.height]
+                    };
+
+                    await page.render(renderContext).promise;
+                }
+            };
+
+            renderPages();
+        }).catch(error => {
+            loading.textContent = 'Xatolik: PDF yuklanmadi';
+            console.error(error);
+        });
+
+        // Ekran o'lchami o'zgarganda qayta render qilish
+        let resizeTimeout;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(() => {
+                location.reload();
+            }, 500);
+        });
     </script>
 </body>
 </html>
