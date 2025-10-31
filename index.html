@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>2025-52316</title>
+    <title>Sertifikat</title>
     <style>
         body, html {
             margin: 0;
@@ -20,6 +20,9 @@
     </style>
 </head>
 <body>
-    <iframe src="223344.pdf"></iframe>
+    <script>
+        const pdfUrl = window.location.origin + window.location.pathname.replace('index.html', '') + '223344.pdf';
+        document.write('<iframe src="https://docs.google.com/viewer?url=' + encodeURIComponent(pdfUrl) + '&embedded=true"></iframe>');
+    </script>
 </body>
 </html>
